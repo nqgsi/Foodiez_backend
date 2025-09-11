@@ -4,11 +4,12 @@ import {
   deleteCategory,
   getAllCategories,
 } from "../controller/category";
+import { authorization } from "../API/authorization";
 
 const router = express.Router();
 
 router.get("/", getAllCategories);
-router.post("/", createCategory);
-router.delete("/:id", deleteCategory);
+router.post("/", authorization, createCategory);
+router.delete("/:id", authorization, deleteCategory);
 
 export default router;

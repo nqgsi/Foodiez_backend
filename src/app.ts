@@ -15,7 +15,7 @@ connectDB();
 
 const app = express();
 
-app.use("/media", express.static(path.join(__dirname, "../media")));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());

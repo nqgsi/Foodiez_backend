@@ -6,6 +6,7 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import User from "../models/User";
 import { invaldCredentialsErrorHandler } from "../Middleware/errors";
+import { env } from "process";
 
 export const signup = async (
   req: Request,
@@ -14,6 +15,7 @@ export const signup = async (
 ) => {
   try {
     const { email, password, username } = req.body || {};
+
     if (!email || !password || !username) {
       return next(
         invaldCredentialsErrorHandler(
@@ -35,11 +37,15 @@ export const signup = async (
       return next({ message: "username already exists!", status: 400 });
     }
     const hashedPassword = await generateHashPassword(password);
-
+    const PORT = env.PORT;
     const newUser = await User.create({
       ...req.body,
       password: hashedPassword,
+      image: req.file?.filename,
     });
+    if (req.file) {
+      newUser.image = `localhost:${PORT}/uploads/` + req.file.filename;
+    }
     const token = generatetoken(newUser, email);
     const { password: _, ...userWithoutPassword } = newUser.toObject();
 

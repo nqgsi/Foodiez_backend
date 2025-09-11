@@ -4,11 +4,12 @@ import {
   deleteRecipe,
   getAllRecipes,
 } from "../controller/recipe";
+import { authorization } from "../API/authorization";
 
 const router = express.Router();
 
 router.get("/", getAllRecipes);
-router.post("/", createRecipe);
-router.delete("/:id", deleteRecipe);
+router.post("/", authorization, createRecipe);
+router.delete("/:id", authorization, deleteRecipe);
 
 export default router;
