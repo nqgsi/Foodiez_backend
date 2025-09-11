@@ -1,0 +1,53 @@
+import { serverError } from "../Middleware/serverError";
+import { NextFunction, Request, Response } from "express";
+import Ingredient from "../models/Ingredient";
+import Recipe from "../models/Recipe";
+export const getAllingredients = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ingredients = await Ingredient.find().populate("recipes");
+    res.status(200).json(ingredients);
+  } catch (error) {
+    console.log("the error from getAllingredients", error);
+    return next(serverError);
+  }
+};
+export const createIngredient = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const ingredient = await Ingredient.create(req.body);
+    const save = await ingredient.save();
+    if (save.recipes.length) {
+      await Recipe.updateMany(
+        { _id: { $in: save.recipes } },
+        { $push: { ingredients: save._id } }
+      );
+    }
+    return res.status(200).json(ingredient);
+  } catch (error) {
+    console.log("🚀 ~ createIngredient ~ error:", error);
+    next(serverError);
+  }
+};
+export const deleteIngredient = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const deleted = await Ingredient.findByIdAndDelete(req.params.id);
+    if (!deleted)
+      return res.status(404).json({ message: "ingredient not found" });
+
+    return res.status(200).json({ message: "ingredient deleted successfully" });
+  } catch (error) {
+    console.log("🚀 ~ deleteIngredient ~ error:", error);
+    next(serverError);
+  }
+};

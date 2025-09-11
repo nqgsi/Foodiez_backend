@@ -9,7 +9,7 @@ if (!process.env.JWT_EXP) {
   throw new Error("Missing JWT in environment");
 }
 export const env = {
-  PORT: process.env.PORT || "5000",
+  PORT: process.env.PORT || "8000",
   DB_URL: process.env.MONGODB_URI,
   JWT_EXP: process.env.JWT_EXP,
   JWT_Secret: process.env.JWT_Secret,

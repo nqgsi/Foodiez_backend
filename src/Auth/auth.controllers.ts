@@ -4,7 +4,7 @@ import { generatetoken } from "../Utils/jwt";
 import { serverError } from "../Middleware/serverError";
 import validator from "validator";
 import bcrypt from "bcrypt";
-import User from "../Data/User";
+import User from "../models/User";
 import { invaldCredentialsErrorHandler } from "../Middleware/errors";
 
 export const signup = async (
@@ -13,10 +13,12 @@ export const signup = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password } = req.body || {};
-    if (!email || !password) {
+    const { email, password, username } = req.body || {};
+    if (!email || !password || !username) {
       return next(
-        invaldCredentialsErrorHandler("Email and password are required")
+        invaldCredentialsErrorHandler(
+          "Email and username and password are required"
+        )
       );
     }
 
@@ -28,6 +30,10 @@ export const signup = async (
     if (emailExists) {
       return next({ message: "email already exists!", status: 400 });
     }
+    const userExists = await User.findOne({ username });
+    if (userExists) {
+      return next({ message: "username already exists!", status: 400 });
+    }
     const hashedPassword = await generateHashPassword(password);
 
     const newUser = await User.create({
@@ -35,10 +41,11 @@ export const signup = async (
       password: hashedPassword,
     });
     const token = generatetoken(newUser, email);
+    const { password: _, ...userWithoutPassword } = newUser.toObject();
 
-    return res.status(201).json({ token });
+    return res.status(201).json({ token, user: userWithoutPassword });
   } catch (err) {
-    console.log("this is my error", err);
+    console.log("this is the error", err);
     return next(serverError);
   }
 };
@@ -65,6 +72,7 @@ export const signin = async (
       return next(invaldCredentialsErrorHandler());
     }
     const token = generatetoken(emailFound._id, email);
+
     res.status(200).json({ token });
   } catch (err) {
     return next(serverError);
