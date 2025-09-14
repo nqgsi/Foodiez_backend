@@ -2,13 +2,13 @@ import express from "express";
 import {
   createIngredient,
   deleteIngredient,
-  getAllingredients,
+  getAllIngredients,
 } from "../controller/ingredients";
 import { authorization } from "../API/authorization";
 
 const router = express.Router();
 
-router.get("/", getAllingredients);
+router.get("/", getAllIngredients);
 router.post("/", authorization, createIngredient);
 router.delete("/:id", authorization, deleteIngredient);
 

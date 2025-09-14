@@ -6,6 +6,7 @@ const recipeSchema = new Schema({
   user: { type: Schema.ObjectId, ref: "User" },
   ingredients: [{ type: Schema.ObjectId, ref: "Ingredient" }],
   categories: [{ type: Schema.ObjectId, ref: "Category" }],
+  image: { type: String },
 });
 
 const Recipe = model("Recipe", recipeSchema);

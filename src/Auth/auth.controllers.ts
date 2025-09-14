@@ -8,6 +8,8 @@ import User from "../models/User";
 import { invaldCredentialsErrorHandler } from "../Middleware/errors";
 import { env } from "process";
 
+const expectedFields = ["email", "username", "password"];
+
 export const signup = async (
   req: Request,
   res: Response,
@@ -16,10 +18,24 @@ export const signup = async (
   try {
     const { email, password, username } = req.body || {};
 
+    // Check for typos in field names
+    const bodyKeys = Object.keys(req.body || {});
+    bodyKeys.forEach((key) => {
+      if (!expectedFields.includes(key)) {
+        return next(
+          invaldCredentialsErrorHandler(
+            `Invalid field "${key}" in request body. Did you mean one of: ${expectedFields.join(
+              ", "
+            )}?`
+          )
+        );
+      }
+    });
+
     if (!email || !password || !username) {
       return next(
         invaldCredentialsErrorHandler(
-          "Email and username and password are required"
+          "Email, username, and password are required"
         )
       );
     }
@@ -30,28 +46,33 @@ export const signup = async (
 
     const emailExists = await User.findOne({ email });
     if (emailExists) {
-      return next({ message: "email already exists!", status: 400 });
+      return next({ message: "Email already exists!", status: 400 });
     }
+
     const userExists = await User.findOne({ username });
     if (userExists) {
-      return next({ message: "username already exists!", status: 400 });
+      return next({ message: "Username already exists!", status: 400 });
     }
+
     const hashedPassword = await generateHashPassword(password);
     const PORT = env.PORT;
+
     const newUser = await User.create({
       ...req.body,
       password: hashedPassword,
       image: req.file?.filename,
     });
+
     if (req.file) {
-      newUser.image = `localhost:${PORT}/uploads/` + req.file.filename;
+      newUser.image = `http://localhost:${PORT}/uploads/${req.file.filename}`;
     }
+
     const token = generatetoken(newUser, email);
     const { password: _, ...userWithoutPassword } = newUser.toObject();
 
     return res.status(201).json({ token, user: userWithoutPassword });
   } catch (err) {
-    console.log("this is the error", err);
+    console.log("Signup error:", err);
     return next(serverError);
   }
 };
@@ -62,25 +83,48 @@ export const signin = async (
   next: NextFunction
 ) => {
   try {
+    const expectedFields = ["email", "password"];
+
+    const bodyKeys = Object.keys(req.body || {});
+    for (const key of bodyKeys) {
+      if (!expectedFields.includes(key)) {
+        return next(
+          invaldCredentialsErrorHandler(
+            `Invalid field "${key}" in request body. Did you mean one of: ${expectedFields.join(
+              ", "
+            )}?`
+          )
+        );
+      }
+    }
+
     const { email, password } = req.body;
+
+    // Check for missing required fields
     if (!email || !password) {
       return next(
         invaldCredentialsErrorHandler("Email and password are required")
       );
     }
 
-    const emailFound = await User.findOne({ email });
-    if (!emailFound) {
-      return next(invaldCredentialsErrorHandler());
+    if (!validator.isEmail(email)) {
+      return next(invaldCredentialsErrorHandler("Invalid email format"));
     }
-    const isMatch = await bcrypt.compare(password, emailFound.password!);
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(invaldCredentialsErrorHandler("Email not found"));
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password!);
     if (!isMatch) {
       return next(invaldCredentialsErrorHandler());
     }
-    const token = generatetoken(emailFound._id, email);
 
+    const token = generatetoken(user._id, email);
     res.status(200).json({ token });
   } catch (err) {
+    console.log("Signin error:", err);
     return next(serverError);
   }
 };

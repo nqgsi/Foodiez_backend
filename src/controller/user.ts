@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import User from "../models/User";
 import { serverError } from "../Middleware/serverError";
+import mongoose from "mongoose";
+import { invaldCredentialsErrorHandler } from "../Middleware/errors";
 
 export const getAllUsers = async (
   req: Request,
@@ -26,13 +28,20 @@ export const getAllUsers = async (
     return next(serverError);
   }
 };
+
 export const deleteUser = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const deleted = await User.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id!)) {
+      return next(invaldCredentialsErrorHandler("Invalid user ID"));
+    }
+
+    const deleted = await User.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ message: "user not found" });
 
     return res.status(200).json({ message: "user deleted successfully" });

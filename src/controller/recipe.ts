@@ -30,7 +30,7 @@ export const createRecipe = async (
   try {
     const { title, description, user, ingredients, categories } = req.body;
 
-    if (!title || !user) {
+    if (!title) {
       return res.status(400).json({ message: "Title and user are required" });
     }
 
@@ -40,11 +40,11 @@ export const createRecipe = async (
       user,
       ingredients,
       categories,
+      image: req.file?.filename,
     });
     const save = await newRecipe.save();
 
     //ingredients//
-
     if (save.ingredients.length) {
       await Ingredient.updateMany(
         { _id: { $in: save.ingredients } },
@@ -69,6 +69,7 @@ export const createRecipe = async (
     return next(serverError);
   }
 };
+
 export const deleteRecipe = async (
   req: Request,
   res: Response,
